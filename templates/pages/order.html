@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block main %}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1>Order</h1>
+            <h2 class="my-4">注文情報</h2>
+            <table class="table mb-5">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">First</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">No.</th>
+                        <td>{{object.pk}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">金額</th>
+                        <td>{{object.amount}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">税込</th>
+                        <td>{{object.tax_included}}</td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">注文確定日</th>
+                        <td>{{object.created_at|date:"Y-m-d f"}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">UID</th>
+                        <td>{{object.uid}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">郵便番号</th>
+                        <td>{{shipping.0.fields.zipcode}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">都道府県</th>
+                        <td>{{shipping.0.fields.prefecture}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">市区</th>
+                        <td>{{shipping.0.fields.city}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">住所1</th>
+                        <td>{{shipping.0.fields.address1}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">住所2</th>
+                        <td>{{shipping.0.fields.address2}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">電話番号</th>
+                        <td>{{shipping.0.fields.tel}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% if object.is_confirmed and not object.canceled_at %}
+
+            <a class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#unreservationModal{{ object.pk }}">
+                予約キャンセル
+            </a>
+
+            <!-- ========================= -->
+            <!-- 予約キャンセルモーダル -->
+            <!-- ========================= -->
+            <div class="modal fade" id="unreservationModal{{ object.pk }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+                            <h5 class="modal-title">確認</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <p>本当に予約をキャンセルしますか？</p>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                いいえ
+                            </button>
+
+                            <form method="post" action="{% url 'unreserve' object.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    予約キャンセル
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <h2 class="my-4">予約一覧</h2>
+            <table class="table mb-5">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">画像</th>
+                        <th scope="col">品名</th>
+                        <th scope="col">単価</th>
+                        <th scope="col">人数</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td><img src="/{{item.image}}" width="auto" height="100px"></td>
+                        <td>{{ item.name }}</td>
+                        <td>¥{{item.price}}</td>
+                        <td>{{item.quantity}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

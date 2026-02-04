@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block main %}
+
+{% include 'snippets/headline.html' %}
+
+<div class="container px-5" style="max-width:100%">
+    <div class="row my-5">
+        {% for object in POPULAR_ITEMS %}
+        {% if forloop.counter < 4 %} <div class="col-12 col-lg-4 my-3">
+            <button type="button" class="btn btn-danger rounded-0">{{ forloop.counter }}番人気</button>
+            {% include 'snippets/item_box.html' %}
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<div class="row my-5">
+    {% for object in object_list %}
+    <div class="col-12 col-lg-3 my-3">
+        {% include 'snippets/item_box.html' %}
+    </div>
+    {% endfor %}
+</div>
+</div>
+
+<!-- タグ一覧 -->
+<div class="row my-5">
+    <div class="col-12">
+        <h5 class="mb-3">タグ一覧</h5>
+
+        <div class="d-flex flex-wrap gap-2">
+            {% for tag in tags %}
+            <a href="/tags/{{ tag.slug }}/" class="badge bg-light text-dark text-decoration-none px-3 py-2">
+                #{{ tag.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

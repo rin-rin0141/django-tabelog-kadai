@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block main %}
+
+<div class="container ">
+  <div class="row my-5">
+    <div class="col-12">
+      <h2>カート</h2>
+      {% if object_list|length != 0 %}
+      <table class="table mb-5 text-right">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">品名</th>
+            <th scope="col">単価</th>
+            <th scope="col">人数</th>
+            <th scope="col">計</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for object in object_list %}
+          <tr>
+            <td>No.{{forloop.counter}}</td>
+            <td>{{object.name}}</td>
+            <td>{{object.price}}</td>
+            <td>{{object.quantity}}</td>
+            <td>{{object.subtotal}}</td>
+            <td><a href="/cart/remove/{{object.pk}}/" class="my-auto btn btn-danger btn-sm">削除</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="lead text-right">小計 - ¥{{total}}</p>
+      <p class="lead text-right">税込計 - ¥{{tax_included_total}}</p>
+
+      <div class="text-right">
+        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#confirmReserveModal">
+          予約
+        </button>
+      </div>
+
+      {% else %}
+      <p class="">ショッピングカートにアイテムがありません。</p>
+      {% endif %}
+    </div>
+  </div>
+  <h2>おすすめ</h2>
+  <div class="row mb-5">
+    {% for object in ADDTIONAL_ITEMS %}
+    <div class="col-12 col-lg-3 my-3">
+      {% include 'snippets/item_add_box.html' %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- 予約確認モーダル -->
+<div class="modal fade" id="confirmReserveModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">予約確認</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="mb-0">
+          本当にこの内容で予約しますか？
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal">
+          キャンセル
+        </button>
+
+        <!-- ここが本物の送信 -->
+        <form action="/pay/checkout/" method="POST">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">
+            はい、予約する
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+

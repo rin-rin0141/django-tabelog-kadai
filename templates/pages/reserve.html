@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block main %}
+<div class="container my-5">
+
+  <div class="card shadow-sm">
+    <div class="row g-0">
+
+      <!-- 左：画像 -->
+      <div class="col-md-6">
+        <img
+          src="/{{ object.image }}"
+          class="img-fluid w-100 h-100"
+          style="object-fit: cover;"
+          alt="{{ object.name }}"
+        >
+      </div>
+
+      <!-- 右：フォーム -->
+      <div class="col-md-6">
+        <div class="card-body p-5">
+
+          <h3 class="text-center mb-2">
+            {{ object.name }}
+          </h3>
+          <p class="text-center text-muted fs-4 mb-4">
+            ¥{{ object.price }}
+          </p>
+
+          <form action="{% url 'cart_add' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="item_pk" value="{{ object.pk }}">
+
+            <!-- 人数 -->
+            <div class="mb-4">
+              <label class="form-label fs-5">人数</label>
+              <input
+                type="number"
+                class="form-control form-control-lg"
+                name="quantity"
+                value="1"
+                min="1"
+                max="{{ object.stock }}"
+              >
+            </div>
+
+            <!-- 日付 -->
+            <div class="mb-4">
+              <label class="form-label fs-5">予約日</label>
+              <input
+                type="date"
+                class="form-control form-control-lg"
+                name="reserve_date"
+                required
+              >
+            </div>
+
+            <!-- 時間 -->
+            <div class="mb-5">
+              <label class="form-label fs-5">予約時間</label>
+              <select
+                class="form-select form-select-lg"
+                name="reserve_time"
+                required
+              >
+                <option value="">予約時間を選択</option>
+                <option value="10:00">10:00</option>
+                <option value="11:00">11:00</option>
+                <option value="12:00">12:00</option>
+                <option value="13:00">13:00</option>
+                <option value="14:00">14:00</option>
+                <option value="15:00">15:00</option>
+                <option value="16:00">16:00</option>
+                <option value="17:00">17:00</option>
+                <option value="18:00">18:00</option>
+                <option value="19:00">19:00</option>
+                <option value="20:00">20:00</option>
+                <option value="21:00">21:00</option>
+                <option value="22:00">22:00</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg w-100">
+              予約する
+            </button>
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

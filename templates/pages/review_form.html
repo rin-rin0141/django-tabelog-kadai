@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block main %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <h3 class="card-title text-center mb-4">
+            📝 レビュー投稿
+          </h3>
+
+          <form method="post" action="{% url 'create_review' item_id %}">
+            {% csrf_token %}
+
+            <!-- 評価 -->
+            <div class="mb-3">
+              <label class="form-label">
+                {{ form.rating.label }}
+              </label>
+              {{ form.rating }}
+            </div>
+
+            <!-- コメント -->
+            <div class="mb-3">
+              <label class="form-label">
+                {{ form.comment.label }}
+              </label>
+              {{ form.comment }}
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-dark btn-lg">
+                投稿する
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
