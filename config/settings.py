@@ -11,32 +11,31 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
  
 from pathlib import Path
-import environ  
+
+import os
  
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
  
-
-env = environ.Env()
-root = environ.Path(BASE_DIR / 'secrets')
- 
 # 本番環境用
-env.read_env(root('.env.prod'))
- 
-# 開発環境用
-#env.read_env(root('.env.dev'))
+#env.read_env(root('.env.prod'))
  
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
  
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env.str('SECRET_KEY')
+SECRET_KEY = os.environ.get("SECRET_KEY")
  
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG')
+DEBUG = os.environ.get("DEBUG") == "True"
  
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
- 
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS",
+    "taberogumodoki-475f351d156f.herokuapp.com"
+).split(",")
+
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY is not set")
  
 # Application definition
  
@@ -138,10 +137,9 @@ STATICFILES_DIRS = [BASE_DIR / 'static']  # 追記
 TAX_RATE = 0.1
  
 # Stripe API Key
-STRIPE_API_SECRET_KEY = env.str('STRIPE_API_SECRET_KEY')
- 
+STRIPE_API_SECRET_KEY = os.environ.get("STRIPE_API_SECRET_KEY")
 # スキーマ＆ドメイン
-MY_URL = env.str('MY_URL')
+MY_URL = os.environ.get("MY_URL")
  
  
 # カスタムユーザーモデル
