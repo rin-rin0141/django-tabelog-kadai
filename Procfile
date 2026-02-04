@@ -1,1 +1,1 @@
-web: gunicorn taberogumodoki.wsgi
+web: gunicorn config.wsgi
