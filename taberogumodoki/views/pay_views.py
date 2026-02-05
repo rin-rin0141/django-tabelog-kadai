@@ -10,6 +10,7 @@ from django.contrib import messages
 
 stripe.api_key = settings.STRIPE_API_SECRET_KEY
 
+
 def get_tax_rate():
     return stripe.TaxRate.create(
         display_name="消費税",
@@ -19,6 +20,7 @@ def get_tax_rate():
         percentage=settings.TAX_RATE * 100,  # 10%
         inclusive=False,  # 外税を指定（内税の場合はTrue）
     )
+
 
 def create_line_item(unit_amount, name, quantity):
     tax_rate = get_tax_rate()
@@ -53,10 +55,25 @@ class PaySuccessView(LoginRequiredMixin, TemplateView):
     template_name = "pages/success.html"
 
     def get(self, request, *args, **kwargs):
+        session_id = request.GET.get("session_id")
+
         order = Order.objects.filter(
             user=request.user,
-            is_confirmed=False
-        ).order_by("-created_at").first()
+            is_confirmed=False,
+            stripe_session_id=session_id,
+        ).first()
+
+        if not order:
+            messages.error(request, "注文が見つかりませんでした。もう一度お試しください。")
+            return redirect("/cart/")
+
+        # ✅ payment_intent_id を保存（返金に使える）
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            order.stripe_payment_intent_id = session.payment_intent
+            order.save()
+        except Exception:
+            pass
 
         with transaction.atomic():
             for elem in json.loads(order.items):
@@ -70,20 +87,6 @@ class PaySuccessView(LoginRequiredMixin, TemplateView):
 
         del request.session["cart"]
         return super().get(request, *args, **kwargs)
-
-
-class PayCancelView(LoginRequiredMixin, TemplateView):
-    template_name = "pages/cancel.html"
-
-    def get(self, request, *args, **kwargs):
-        # 仮 Order を消すだけ
-        Order.objects.filter(
-            user=request.user,
-            is_confirmed=False
-        ).delete()
-
-        return super().get(request, *args, **kwargs)
-
 
 
 from django.db import transaction
@@ -129,17 +132,19 @@ class PayWithStripe(LoginRequiredMixin, View):
                     }
                 )
 
-            # 仮注文作成
-            Order.objects.create(
-                user=request.user,
-                uid=request.user.pk,
-                items=json.dumps(items),
-                shipping=serializers.serialize("json", [request.user.profile]),
-                amount=cart["total"],
-                tax_included=cart["tax_included_total"],
-                reserve_date=cart["reserve_date"],
-                reserve_time=cart["reserve_time"],
-            )
+        # 仮注文作成（← order 変数に入れる）
+
+
+        order = Order.objects.create(
+            user=request.user,
+            uid=request.user.pk,
+            items=json.dumps(items),
+            shipping=serializers.serialize("json", [request.user.profile]),
+            amount=cart["total"],
+            tax_included=cart["tax_included_total"],
+            reserve_date=cart["reserve_date"],
+            reserve_time=cart["reserve_time"],
+        )
 
         # Stripe セッション（DB確定後）
         checkout_session = stripe.checkout.Session.create(
@@ -147,9 +152,14 @@ class PayWithStripe(LoginRequiredMixin, View):
             payment_method_types=["card"],
             line_items=line_items,
             mode="payment",
-            success_url=f"{settings.MY_URL}/pay/success/",
+            # ✅ session_id を success に付ける（超重要）
+            success_url=f"{settings.MY_URL}/pay/success/?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{settings.MY_URL}/pay/cancel/",
         )
+
+        # ✅ Order と Stripe を紐づけ保存
+        order.stripe_session_id = checkout_session.id
+        order.save()
 
         return redirect(checkout_session.url)
 
