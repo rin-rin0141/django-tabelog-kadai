@@ -10,16 +10,18 @@ from django.contrib import messages
 
 stripe.api_key = settings.STRIPE_API_SECRET_KEY
 
-tax_rate = stripe.TaxRate.create(
-    display_name="消費税",
-    description="消費税",
-    country="JP",
-    jurisdiction="JP",  # 管轄を指定
-    percentage=settings.TAX_RATE * 100,  # 10%
-    inclusive=False,  # 外税を指定（内税の場合はTrue）
-)
+def get_tax_rate():
+    return stripe.TaxRate.create(
+        display_name="消費税",
+        description="消費税",
+        country="JP",
+        jurisdiction="JP",  # 管轄を指定
+        percentage=settings.TAX_RATE * 100,  # 10%
+        inclusive=False,  # 外税を指定（内税の場合はTrue）
+    )
 
 def create_line_item(unit_amount, name, quantity):
+    tax_rate = get_tax_rate()
     return {
         "price_data": {
             "currency": "jpy",
