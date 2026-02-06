@@ -37,12 +37,10 @@ def create_line_item(unit_amount, name, quantity):
         "price_data": {
             "currency": "jpy",
             "unit_amount": unit_amount,
-            "product_data": {
-                "name": name,
-            },
+            "product_data": {"name": name},
         },
         "quantity": quantity,
-        "tax_rates": [settings.STRIPE_TAX_RATE_ID],  # ← ここ重要
+        # ✅ Stripe Tax を使うので tax_rates は削除
     }
 
 
@@ -98,6 +96,9 @@ class PaySuccessView(LoginRequiredMixin, TemplateView):
         return super().get(request, *args, **kwargs)
 
 class PayWithStripe(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        messages.info(request, "決済を続けるには、もう一度「決済へ進む」を押してください。")
+        return redirect("/cart/")
 
     def post(self, request, *args, **kwargs):
         try:
@@ -114,59 +115,67 @@ class PayWithStripe(LoginRequiredMixin, View):
             items = []
             line_items = []
 
+            # 在庫チェック（排他ロック）
             with transaction.atomic():
-
                 for item_pk, quantity in cart["items"].items():
                     item = Item.objects.select_for_update().get(pk=item_pk)
 
-                    # ✅ 在庫チェック
                     if item.stock < quantity:
                         messages.error(request, f"{item.name} の在庫が足りません")
                         return redirect("/")
 
-                    line_items.append(create_line_item(item.price, item.name, quantity))
+                    # Stripe Tax 用（tax_rates は絶対に入れない）
+                    line_items.append({
+                        "price_data": {
+                            "currency": "jpy",
+                            "unit_amount": item.price,
+                            "product_data": {"name": item.name},
+                        },
+                        "quantity": quantity,
+                    })
 
-                    items.append(
-                        {
-                            "pk": item.pk,
-                            "name": item.name,
-                            "image": str(item.image),
-                            "price": item.price,
-                            "quantity": quantity,
-                        }
-                    )
+                    items.append({
+                        "pk": item.pk,
+                        "name": item.name,
+                        "image": str(item.image),
+                        "price": item.price,
+                        "quantity": quantity,
+                    })
 
-            # 仮注文作成（← order 変数に入れる）
-
-
+            # 仮注文作成
             order = Order.objects.create(
                 user=request.user,
                 uid=request.user.pk,
                 items=json.dumps(items),
                 shipping=serializers.serialize("json", [request.user.profile]),
                 amount=cart["total"],
-                tax_included=cart["tax_included_total"],
+                tax_included=cart["tax_included_total"],  # 表示用（10%固定でOK）
                 reserve_date=cart["reserve_date"],
                 reserve_time=cart["reserve_time"],
+                is_confirmed=False,
             )
 
-            # Stripe セッション（DB確定後）
+            # Stripe Checkout Session 作成（Stripe Tax 有効）
             checkout_session = stripe.checkout.Session.create(
                 customer_email=request.user.email,
-                payment_method_types=["card"],
-                line_items=line_items,
                 mode="payment",
-                # ✅ session_id を success に付ける（超重要）
+                line_items=line_items,
+
+                # 🔥 Stripe Tax（これだけでOK）
+                automatic_tax={"enabled": True},
+
                 success_url=f"{settings.MY_URL}/pay/success/?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{settings.MY_URL}/pay/cancel/",
             )
 
-            # ✅ Order と Stripe を紐づけ保存
+            # Order と Stripe を紐付け
             order.stripe_session_id = checkout_session.id
-            order.save()
+            order.save(update_fields=["stripe_session_id"])
+
+            print("=== PAY CHECKOUT SESSION CREATED ===", checkout_session.id)
 
             return redirect(checkout_session.url)
-        
+
         except Exception as e:
             print("=== PAY CHECKOUT ERROR ===")
             print(e)
