@@ -140,6 +140,8 @@ TAX_RATE = 0.1
 STRIPE_API_SECRET_KEY = os.environ.get("STRIPE_API_SECRET_KEY")
 # スキーマ＆ドメイン
 MY_URL = os.environ.get("MY_URL")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+STRIPE_TAX_RATE_ID = os.environ.get("STRIPE_TAX_RATE_ID")
  
  
 # カスタムユーザーモデル

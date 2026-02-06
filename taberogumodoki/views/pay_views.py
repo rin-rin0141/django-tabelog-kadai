@@ -9,6 +9,15 @@ import json
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import F
+import logging
+from django.contrib.auth import get_user_model
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import get_user_model
+
+logger = logging.getLogger(__name__)
+User = get_user_model()
+
 
 stripe.api_key = settings.STRIPE_API_SECRET_KEY
 
@@ -190,5 +199,55 @@ class SubscribeCancelView(LoginRequiredMixin, View):
         messages.success(request, "プレミアム会員を退会しました。")
         return redirect("/")
     
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
 
+    # ① 署名検証（失敗しても500にしない）
+    try:
+        event = stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=sig_header,
+            secret=getattr(settings, "STRIPE_WEBHOOK_SECRET", None),
+        )
+    except Exception:
+        logger.exception("❌ Stripe signature verification failed")
+        return HttpResponse(status=200)
 
+    # ② イベント中身の安全処理
+    try:
+        event_type = event.get("type")
+        event_id = event.get("id")
+        data = event.get("data", {}).get("object", {}) or {}
+
+        logger.info(f"🔔 Stripe webhook received: type={event_type} id={event_id}")
+
+        # customer_email は無いことがある
+        email = data.get("customer_email")
+        if not email:
+            logger.warning(f"⚠ customer_email is missing (event_type={event_type} id={event_id})")
+            return HttpResponse(status=200)
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            logger.warning(f"⚠ User not found: {email} (event_type={event_type} id={event_id})")
+            return HttpResponse(status=200)
+
+        # ③ イベント別処理
+        if event_type == "checkout.session.completed":
+            mode = data.get("mode")  # payment / subscription
+
+            # サブスク決済完了時のみ paid にする（あなたのUserモデルと整合）
+            if mode == "subscription":
+                if not user.is_paid:
+                    user.is_paid = True
+                    user.save(update_fields=["is_paid"])
+                logger.info(f"✅ Subscription activated for {email} (id={event_id})")
+
+        # それ以外は現時点では何もしない（500防止優先）
+
+    except Exception:
+        logger.exception("🔥 Error inside stripe_webhook handler")
+
+    return HttpResponse(status=200)
