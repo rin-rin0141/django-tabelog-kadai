@@ -14,6 +14,9 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
+import traceback
+from django.http import HttpResponseServerError
+
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -97,72 +100,78 @@ class PaySuccessView(LoginRequiredMixin, TemplateView):
 class PayWithStripe(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
+        try:
+            # プロフィールチェック
+            if not check_profile_filled(request.user.profile):
+                messages.error(request, "プロフィールを埋めないと予約できません。")
+                return redirect("/profile/")
 
-        # プロフィールチェック
-        if not check_profile_filled(request.user.profile):
-            messages.error(request, "プロフィールを埋めないと予約できません。")
-            return redirect("/profile/")
+            cart = request.session.get("cart")
+            if not cart or not cart.get("items"):
+                messages.error(request, "カートが空です。")
+                return redirect("/")
 
-        cart = request.session.get("cart")
-        if not cart or not cart.get("items"):
-            messages.error(request, "カートが空です。")
-            return redirect("/")
+            items = []
+            line_items = []
 
-        items = []
-        line_items = []
+            with transaction.atomic():
 
-        with transaction.atomic():
+                for item_pk, quantity in cart["items"].items():
+                    item = Item.objects.select_for_update().get(pk=item_pk)
 
-            for item_pk, quantity in cart["items"].items():
-                item = Item.objects.select_for_update().get(pk=item_pk)
+                    # ✅ 在庫チェック
+                    if item.stock < quantity:
+                        messages.error(request, f"{item.name} の在庫が足りません")
+                        return redirect("/")
 
-                # ✅ 在庫チェック
-                if item.stock < quantity:
-                    messages.error(request, f"{item.name} の在庫が足りません")
-                    return redirect("/")
+                    line_items.append(create_line_item(item.price, item.name, quantity))
 
-                line_items.append(create_line_item(item.price, item.name, quantity))
+                    items.append(
+                        {
+                            "pk": item.pk,
+                            "name": item.name,
+                            "image": str(item.image),
+                            "price": item.price,
+                            "quantity": quantity,
+                        }
+                    )
 
-                items.append(
-                    {
-                        "pk": item.pk,
-                        "name": item.name,
-                        "image": str(item.image),
-                        "price": item.price,
-                        "quantity": quantity,
-                    }
-                )
-
-        # 仮注文作成（← order 変数に入れる）
+            # 仮注文作成（← order 変数に入れる）
 
 
-        order = Order.objects.create(
-            user=request.user,
-            uid=request.user.pk,
-            items=json.dumps(items),
-            shipping=serializers.serialize("json", [request.user.profile]),
-            amount=cart["total"],
-            tax_included=cart["tax_included_total"],
-            reserve_date=cart["reserve_date"],
-            reserve_time=cart["reserve_time"],
-        )
+            order = Order.objects.create(
+                user=request.user,
+                uid=request.user.pk,
+                items=json.dumps(items),
+                shipping=serializers.serialize("json", [request.user.profile]),
+                amount=cart["total"],
+                tax_included=cart["tax_included_total"],
+                reserve_date=cart["reserve_date"],
+                reserve_time=cart["reserve_time"],
+            )
 
-        # Stripe セッション（DB確定後）
-        checkout_session = stripe.checkout.Session.create(
-            customer_email=request.user.email,
-            payment_method_types=["card"],
-            line_items=line_items,
-            mode="payment",
-            # ✅ session_id を success に付ける（超重要）
-            success_url=f"{settings.MY_URL}/pay/success/?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{settings.MY_URL}/pay/cancel/",
-        )
+            # Stripe セッション（DB確定後）
+            checkout_session = stripe.checkout.Session.create(
+                customer_email=request.user.email,
+                payment_method_types=["card"],
+                line_items=line_items,
+                mode="payment",
+                # ✅ session_id を success に付ける（超重要）
+                success_url=f"{settings.MY_URL}/pay/success/?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{settings.MY_URL}/pay/cancel/",
+            )
 
-        # ✅ Order と Stripe を紐づけ保存
-        order.stripe_session_id = checkout_session.id
-        order.save()
+            # ✅ Order と Stripe を紐づけ保存
+            order.stripe_session_id = checkout_session.id
+            order.save()
 
-        return redirect(checkout_session.url)
+            return redirect(checkout_session.url)
+        
+        except Exception as e:
+            print("=== PAY CHECKOUT ERROR ===")
+            print(e)
+            print(traceback.format_exc())
+            return HttpResponseServerError("checkout error")
 
 
 class SubscribeView(LoginRequiredMixin, View):
