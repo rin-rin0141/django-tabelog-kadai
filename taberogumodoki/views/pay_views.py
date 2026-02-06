@@ -7,6 +7,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core import serializers
 import json
 from django.contrib import messages
+from django.db import transaction
+from django.db.models import F
 
 stripe.api_key = settings.STRIPE_API_SECRET_KEY
 
@@ -75,11 +77,6 @@ class PaySuccessView(LoginRequiredMixin, TemplateView):
 
         del request.session["cart"]
         return super().get(request, *args, **kwargs)
-
-
-from django.db import transaction
-from django.db.models import F
-
 
 class PayWithStripe(LoginRequiredMixin, View):
 
@@ -185,3 +182,11 @@ class SubscribeCancelView(LoginRequiredMixin, View):
         request.user.save()
         messages.success(request, "プレミアム会員を退会しました。")
         return redirect("/")
+    
+class PayCancelView(LoginRequiredMixin, TemplateView):
+    template_name = "pages/cancel.html"
+
+    def get(self, request, *args, **kwargs):
+        Order.objects.filter(user=request.user, is_confirmed=False).delete()
+        return super().get(request, *args, **kwargs)
+
