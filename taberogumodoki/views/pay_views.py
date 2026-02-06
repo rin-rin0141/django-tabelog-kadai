@@ -12,6 +12,13 @@ from django.db.models import F
 
 stripe.api_key = settings.STRIPE_API_SECRET_KEY
 
+class PayCancelView(LoginRequiredMixin, TemplateView):
+    template_name = "pages/cancel.html"
+
+    def get(self, request, *args, **kwargs):
+        Order.objects.filter(user=request.user, is_confirmed=False).delete()
+        return super().get(request, *args, **kwargs)
+
 
 def create_line_item(unit_amount, name, quantity):
     return {
@@ -183,10 +190,5 @@ class SubscribeCancelView(LoginRequiredMixin, View):
         messages.success(request, "プレミアム会員を退会しました。")
         return redirect("/")
     
-class PayCancelView(LoginRequiredMixin, TemplateView):
-    template_name = "pages/cancel.html"
 
-    def get(self, request, *args, **kwargs):
-        Order.objects.filter(user=request.user, is_confirmed=False).delete()
-        return super().get(request, *args, **kwargs)
 
