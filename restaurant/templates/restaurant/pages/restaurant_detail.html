@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<div class="container">
+    <div class="row my-5">
+        <div class="col-12 col-lg-6">
+            <div class="bg-white border overflow-hidden">
+                <img src="{{object.image.url}}" width="100%">
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="border p-3 text-left text-dark overflow-hidden">
+                <h2 class="display-5">{{object.name}}</h2>
+                <p class="lead">
+                    <a href="/restaurant/category/{{object.category.slug}}/"
+                        class="badge badge-pill text-bg-info">{{object.category.name}}</a>
+                    {% for tag in object.tags.all %}
+                    <a href="/restaurant/tag/{{tag.slug}}/" class="badge badge-pill text-bg-light">#{{tag}}</a>
+                    {% endfor %}
+                </p>
+                <p class="lead">¥{{object.price}}（税別）</p>
+                <p class="lead" style="word-break: break-word;">{{object.description}}</p>
+
+                <form action="/cart/add/" method="POST" class="">
+                    {% csrf_token %}
+                    <input type="hidden" name="item_pk" value="{{object.pk}}">
+
+                    <button type="submit" class="btn btn-success">予約する</button>
+                    </p>
+                </form>
+                {% if user.is_premium and user.is_authenticated %}
+                <button type="button" data-bs-toggle="modal" class="btn btn-warning"
+                    data-bs-target="#reviewModal">レビューを書く</button>
+
+                {% elif not user.is_premium and user.is_authenticated %}
+                <button type="button" data-bs-toggle="modal" class="btn btn-warning"
+                    data-bs-target="#premiumModal">P会員になってレビューを書く</button>
+
+                {% elif not user.is_authenticated %}
+                <a href="/accounts/login/">
+                    <button type="button" class="btn btn-primary">
+                        ログイン＋P会員でレビューを書く
+                    </button>
+                </a>
+
+                {% else %}
+                <a href="/accounts/signup/">
+                    <button type="button" class="btn btn-primary">
+                        ログイン＋P会員でレビューを書く
+                    </button>
+                </a>
+
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row my-5">
+        {% for review in results %}
+        <div class="card">
+            <div class="card-header">
+                {{ review.user.username }}さんのレビュー
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ review.title }}</h5>
+                <p class="card-text">{{ review.star_display }}</p>
+                <p class="card-text">{{ review.content }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>おすすめ</h2>
+    <div class="row mb-5">
+        {% for object in ADDITIONAL_ITEMS %}
+        <div class="col-12 col-lg-3 my-3">
+            {% include 'restaurant/pages/item_add_box.html' %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="reviewModal">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">レビュー作成</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'restaurant:reviewkeep' object.pk %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>タイトル</p>
+                    <textarea name="title" placeholder="タイトルを入力" cols="30" rows="1"></textarea></p>
+                    <p>レビュー内容</p>
+                    <textarea name="content" placeholder="レビュー内容を入力" cols="95" rows="5"></textarea></p>
+                    <p>星評価</p>
+                    <select name="rating">
+                        <option value="5">★★★★★</option>
+                        <option value="4">★★★★☆</option>
+                        <option value="3">★★★☆☆</option>
+                        <option value="2">★★☆☆☆</option>
+                        <option value="1">★☆☆☆☆</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="submit" class="btn btn-primary">レビュー投稿</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="premiumModal">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">プレミアム会員登録</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>プレミアム会員になると、レビュー投稿、店舗の予約などが可能になります。</p>
+                <p>月額500円で、いつでも解約可能です。</p>
+                <p>本当に登録しますか？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <form action="{% url 'subscribe' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">登録</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
