@@ -1,0 +1,83 @@
+<div class="py-1 bg-warning">
+  <nav class="container d-flex flex-column flex-md-row justify-content-between">
+    <form class="py-2 column-gap-2 d-flex text-dark" action="/restaurant/search/" method="get">
+      <input type="text" name="q" placeholder="検索したい店名を入力" class="form-control">
+      <input type="number" name="lower" placeholder="価格下限" class="form-control">
+      <input type="number" name="upper" placeholder="価格上限" class="form-control">
+      <button class="btn btn-light text-nowrap" type="submit">検索</button>
+    </form>
+
+    <a class="py-2 text-white" href="/">{{ GOHAN }}</a>
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" href="/">トップ</a>
+    {% if user.is_authenticated %}
+    <form class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;"
+      action="/accounts/logout/" method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-link p-0 text-dark" style="font-family: Arial, sans-serif;">ログアウト</button>
+    </form>
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;"
+      href="/accounts/mypage/">マイページ</a>
+    {% endif %}
+
+    {% if user.is_authenticated and user.is_premium %}
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" data-bs-toggle="modal"
+      data-bs-target="#cancelPremiumModal">プレミアム解除</a>
+    {% else %}
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" data-bs-toggle="modal"
+      data-bs-target="#premiumModal">プレミアム会員登録</a>
+    {% endif %}
+
+    {% if not user.is_authenticated %}
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;"
+      href="/accounts/login/">ログイン</a>
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;"
+      href="/accounts/signup/">新規登録</a>
+    {% endif %}
+  </nav>
+</div>
+
+<div class="modal" tabindex="-1" id="premiumModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">プレミアム会員登録</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>プレミアム会員になると、レビュー投稿、店舗の予約などが可能になります。</p>
+        <p>月額500円で、いつでも解約可能です。</p>
+        <p>本当に登録しますか？</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <form action="{% url 'subscribe' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">登録</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" tabindex="-1" id="cancelPremiumModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">プレミアム解除</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>プレミアム会員を辞めると、レビュー投稿、店舗の予約ができなくなります。</p>
+        <p>本当に解約しますか？</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <form action="{% url 'cancel_subscribe' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">解約</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
