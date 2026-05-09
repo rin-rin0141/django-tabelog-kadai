@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block main %}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1>予約履歴</h1>
+        </div>
+    </div>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">予約ID</th>
+            <th scope="col">予約日</th>
+            <th scope="col">予約時間</th>
+            <th scope="col">予約状態</th>
+            <th scope="col">操作</th>
+        </tr>
+    </thead>
+    {% for reservation in reservations %}
+    <tbody>
+        <tr>
+            <th scope="row">{{ reservation.id }}</th>
+            <td>{{ reservation.reservation_date }}</td>
+            <td>{{ reservation.reservation_time }}</td>
+            <td>{{ reservation.status }}</td>
+            {% if reservation.status != 'canceled' %}
+            <td>
+                <form action="{% url 'accounts:cancel_reservation' reservation.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">キャンセル</button>
+                </form>
+            </td>
+            {% else %}
+            <td></td>
+            {% endif %}
+        </tr>
+    </tbody>
+    {% endfor %}
+</table>
+
+{% endblock %}

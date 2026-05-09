@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<div class="container my-5">
+  <div class="row ">
+    <div class="col-12">
+      {% if 'login' in request.path %}
+      <h1>
+        Login
+      </h1>
+
+      <form method="POST">
+        {% csrf_token %}
+        <div class="form-row">
+          <p>email:</p>
+          <div class="form-group col-md-4">
+            {{ form.username }}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <p>password:</p>
+          <div class="form-group col-md-4">
+            {{ form.password }}
+          </div>
+        </div>
+
+        <button class="btn btn-info btm-sm" type="submit">
+          Login
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% elif 'signup' in request.path %}
+<h1>Signup</h1>
+
+<form method="POST">
+  {% csrf_token %}
+  <div class="form-row">
+    <p>username:</p>
+    <div class="form-group col-md-4">
+      {{ form.username }}
+    </div>
+  </div>
+
+  <div class="form-row">
+    <p>mail address:</p>
+    <div class="form-group col-md-4">
+      {{ form.email }}
+    </div>
+  </div>
+
+  <div class="form-row">
+    <p>password:</p>
+    <div class="form-group col-md-4">
+      {{ form.password }}
+    </div>
+  </div>
+
+  <button class="btn btn-info btm-sm" type="submit">
+    Signup
+  </button>
+</form>
+</div>
+</div>
+</div>
+
+{% endif %}
+
+{% endblock %}
