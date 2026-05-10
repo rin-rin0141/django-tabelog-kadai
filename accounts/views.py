@@ -82,7 +82,7 @@ class CustomSubscribeView(LoginRequiredMixin, TemplateView):
                 cancel_url=cancel_url,
                 line_items=[
                     {
-                        "price": settings.SUBSCRIPTION_PRICE_ID,
+                        "price": settings.STRIPE_PRICE_ID,
                         "quantity": 1,
                     }
                 ],
@@ -175,7 +175,7 @@ class ReceivingWebhookView(View):
             user.stripe_customer_id = stripe_customer_id
             user.stripe_subscription_id = stripe_subscription_id
 
-            if plan_id == settings.SUBSCRIPTION_PRICE_ID:
+            if plan_id == settings.STRIPE_PRICE_ID:
                 if not user.is_premium:
                     user.is_premium = True
                     user.premium_term = timezone.now() + timezone.timedelta(days=30)
