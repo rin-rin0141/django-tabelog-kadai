@@ -31,6 +31,7 @@ class Restaurant(models.Model):
     #on_delete=models.SET_NULLは、Categoryが消された場合に、RestaurantのcategoryフィールドをNULLに設定する
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
+    static_image_path = models.CharField(max_length=255, blank=True, default="")
     
     
     def __str__(self):
