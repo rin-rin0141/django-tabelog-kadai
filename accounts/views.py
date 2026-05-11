@@ -103,16 +103,16 @@ class CancelSubscribeView(LoginRequiredMixin, TemplateView):
                     user.stripe_subscription_id, cancel_at_period_end=True
                 )
                 messages.success(request, "プレミアム会員の解約予約が完了しました。" + "\n" + "現在のプレミアム会員の期限までは、引き続きプレミアム会員の特典を利用できます。")
-                return redirect("mypage")
+                return redirect("accounts:mypage")
 
             except Exception as e:
                 print(e)
                 messages.error(request, "プレミアム会員の解約に失敗しました。")
-                return redirect("mypage")
+                return redirect("accounts:mypage")
 
         else:
             messages.error(request, "プレミアム会員ではありません。")
-            return redirect("mypage")
+            return redirect("accounts:mypage")
 
 
 class ReceivingWebhookView(View):
