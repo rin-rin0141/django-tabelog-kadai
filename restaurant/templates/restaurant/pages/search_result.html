@@ -7,7 +7,7 @@
     <div class="col-4">
         <div class="card mb-4 d-flex flex-row">
             <a href="/restaurant/items/{{ restaurant.pk }}/" class="mb-4 d-flex flex-row">
-                <img src="{{restaurant.image.url}}" style="width: 50%; height: 200px; object-fit: cover;"
+                <img src="{{static restaurant.static_image_path}}" style="width: 50%; height: 200px; object-fit: cover;"
                     class="card-img-top" alt="{{ restaurant.name }}">
                 <div class="card-body" style="width: 50%;">
                     <h2>{{restaurant.name}} - ¥{{restaurant.price}}</h2>
