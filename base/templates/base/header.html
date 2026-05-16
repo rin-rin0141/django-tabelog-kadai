@@ -27,7 +27,6 @@
       data-bs-target="#premiumModal">プレミアム会員登録</a>
 
     {% elif user.is_authenticated and user.is_premium and user.is_premium_cancel_scheduled %}
-    <p class="text-danger">解約予約済</p>
     <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" data-bs-toggle="modal"
       data-bs-target="#resumePremiumModal">解約予約を取り消す</a>
 
