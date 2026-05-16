@@ -22,13 +22,26 @@
                 <p class="lead">¥{{object.price}}（税別）</p>
                 <p class="lead" style="word-break: break-word;">{{object.description}}</p>
 
+                {% if user.is_premium and user.is_authenticated %}
                 <form action="/cart/add/" method="POST" class="">
                     {% csrf_token %}
                     <input type="hidden" name="item_pk" value="{{object.pk}}">
-
                     <button type="button" data-bs-toggle="modal" data-bs-target="#reservationModal" class="btn btn-success">予約する</button>
                     </p>
                 </form>
+
+                {% elif not user.is_premium and user.is_authenticated %}
+                <button type="button" data-bs-toggle="modal" class="btn btn-warning"
+                    data-bs-target="#premiumModal">P会員になって予約する</button>
+
+                {% elif not user.is_authenticated %}
+                <a href="{% url 'accounts:login' %}">
+                    <button type="button" class="btn btn-primary">
+                        ログイン＋P会員で予約する
+                    </button>
+                </a>
+                {% endif %}
+
                 {% if user.is_premium and user.is_authenticated %}
                 <button type="button" data-bs-toggle="modal" class="btn btn-warning"
                     data-bs-target="#reviewModal">レビューを書く</button>
