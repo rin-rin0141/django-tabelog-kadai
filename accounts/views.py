@@ -56,7 +56,8 @@ class HistoryView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         user = request.user
         reservations = Reservation.objects.filter(user=user)
-        return render(request, 'history.html', {'reservations': reservations})
+        return render(request, "history.html", {"reservations": reservations})
+
 
 class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     template_name = "password_change.html"
@@ -91,7 +92,7 @@ class CustomSubscribeView(LoginRequiredMixin, TemplateView):
 
         except Exception as e:
             print(e)
-            return redirect("subscribe_failed")
+            return redirect("accounts:subscribe_failed")
 
 
 class CancelSubscribeView(LoginRequiredMixin, TemplateView):
@@ -102,7 +103,14 @@ class CancelSubscribeView(LoginRequiredMixin, TemplateView):
                 stripe.Subscription.modify(
                     user.stripe_subscription_id, cancel_at_period_end=True
                 )
-                messages.success(request, "プレミアム会員の解約予約が完了しました。" + "\n" + "現在のプレミアム会員の期限までは、引き続きプレミアム会員の特典を利用できます。")
+                user.is_premium_cancel_scheduled = True
+                user.save()
+                messages.success(
+                    request,
+                    "プレミアム会員の解約予約が完了しました。"
+                    + "\n"
+                    + "現在のプレミアム会員の期限までは、引き続きプレミアム会員の特典を利用できます。",
+                )
                 return redirect("accounts:mypage")
 
             except Exception as e:
@@ -176,8 +184,10 @@ class ReceivingWebhookView(View):
             user.stripe_subscription_id = stripe_subscription_id
 
             if plan_id == settings.STRIPE_PRICE_ID:
+
                 if not user.is_premium:
                     user.is_premium = True
+                    user.is_premium_cancel_scheduled = False
                     user.premium_term = timezone.now() + timezone.timedelta(days=30)
                     user.save()
                     WebhookEvent.objects.create(
@@ -202,7 +212,8 @@ class ReceivingWebhookView(View):
             user = User.objects.get(stripe_subscription_id=subscription_id)
             user.is_premium = False
             user.premium_term = None
-            user.stripe_subscription_id = None
+            user.is_premium_cancel_scheduled = False
+            user.stripe_subscription_id = ""
             user.save()
             WebhookEvent.objects.create(
                 user=user, event_id=event_id, event_type=event_type
@@ -220,14 +231,41 @@ class SuccessSubscribeView(LoginRequiredMixin, TemplateView):
 
 class FailedSubscribeView(LoginRequiredMixin, TemplateView):
     template_name = "subscribe_failed.html"
-    
+
+
 class CancelReservationView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        reservation_id = kwargs.get('pk')
+        reservation_id = kwargs.get("pk")
         reservation = Reservation.objects.get(id=reservation_id, user=request.user)
-        reservation.status = 'canceled'
+        reservation.status = "canceled"
         reservation.save()
         messages.success(request, "予約がキャンセルされました。")
         return redirect("accounts:history")
-    
-    
+
+
+class ResumeSubscribeView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        if user.stripe_subscription_id:
+            try:
+                stripe.Subscription.modify(
+                    user.stripe_subscription_id, cancel_at_period_end=False
+                )
+                user.is_premium_cancel_scheduled = False
+                user.save()
+                messages.success(
+                    request,
+                    "プレミアム会員の解約予約が取り消されました。引き続きプレミアム会員の特典を利用できます。",
+                )
+                return redirect("accounts:mypage")
+
+            except Exception as e:
+                print(e)
+                messages.error(
+                    request, "プレミアム会員の解約予約の取り消しに失敗しました。"
+                )
+                return redirect("accounts:mypage")
+            
+        else:
+            messages.error(request, "プレミアム会員ではありません。")
+            return redirect("accounts:mypage")

@@ -20,10 +20,16 @@
     {% endif %}
 
     {% if not user.is_authenticated %}
-    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" href="/accounts/login/">プレミアム会員登録</a>
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;"
+      href="/accounts/login/">プレミアム会員登録</a>
     {% elif user.is_authenticated and not user.is_premium %}
     <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" data-bs-toggle="modal"
       data-bs-target="#premiumModal">プレミアム会員登録</a>
+
+    {% elif user.is_authenticated and user.is_premium and user.is_premium_cancel_scheduled %}
+    <p class="text-danger">解約予約済</p>
+    <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" data-bs-toggle="modal"
+      data-bs-target="#resumePremiumModal">解約予約を取り消す</a>
 
     {% elif user.is_authenticated and user.is_premium %}
     <a class="py-2 d-none d-md-inline-block text-dark" style="font-family: Arial, sans-serif;" data-bs-toggle="modal"
@@ -84,3 +90,24 @@
   </div>
 </div>
 
+<div class="modal" tabindex="-1" id="resumePremiumModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">解約予約を取り消す</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>解約予約を取り消すと、次回更新日以降もプレミアム会員が継続されます。</p>
+        <p>本当に解約予約を取り消しますか？</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <form action="{% url 'accounts:resume_subscribe' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">解約予約を取り消す</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

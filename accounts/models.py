@@ -6,6 +6,7 @@ class User(AbstractUser):
     email = models.EmailField(max_length=255, unique=True)
     is_premium = models.BooleanField(default=False)
     premium_term = models.DateTimeField(null=True, blank=True)
+    is_premium_cancel_scheduled = models.BooleanField(default=False)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     stripe_customer_id = models.CharField(max_length=255, blank=True)
