@@ -4,6 +4,6 @@
   object-fit: contain;
 }
 
-body {
-  background-color: pink;
+.restaurant-card {
+  width: 100%;
 }
