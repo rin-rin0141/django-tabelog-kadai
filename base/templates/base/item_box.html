@@ -1,6 +1,6 @@
 <a href="/restaurant/items/{{ object.pk }}/" class="d-block h-100">
   <div class="border h-100">
-    <img src="/{{ object.image }}" width="100%" class="bg-white">
+    <img src="/{{ object.image }}" width="100%" class="bg-white restaurant-card-img">
     <div class="bg-light text-center text-secondary overflow-hidden">
       <div class="my-2 py-2">
         <h2 class="lead">{{ object.name }} - ¥{{ object.price }}</h2>
@@ -8,3 +8,9 @@
     </div>
   </div>
 </a>
+
+.restaurant-card-img {
+  width: 100%;
+  height: 250px;
+  object-fit: contain;
+}
